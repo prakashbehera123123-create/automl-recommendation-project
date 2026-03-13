@@ -1,0 +1,17 @@
+# Virtual environment
+venv/
+
+# Python cache
+__pycache__/
+*.pyc
+
+# Kaggle API credentials
+.kaggle/
+kaggle.json
+
+# Large raw datasets
+datasets/raw_datasets/
+
+# OS files
+.DS_Store
+Thumbs.db
