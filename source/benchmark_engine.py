@@ -21,6 +21,10 @@ DATA_PATH = "datasets/raw_datasets"
 META_PATH = "datasets/meta_dataset.csv"
 
 
+## failed case
+
+failed_cases = []
+
 # function for selecting the model for regression or classification
 
 def get_models(problem_type):
@@ -86,6 +90,14 @@ def process_dataset(dataset_path):
     try:
 
         df = pd.read_csv(dataset_path)
+        if df.shape[1] == 1:
+            df = pd.read_csv(dataset_path, sep=';')
+        
+        if df is None or df.empty:
+            raise Exception("Dataset is empty after loading")
+        
+        # fallback if single column (wrong separator)
+        
     
         df = df.dropna()
         
@@ -112,12 +124,12 @@ def process_dataset(dataset_path):
         if X.shape[1] == 0:
             print("Dataset", dataset_path, "has no usable features")
             return None
-        
-        if y.dtype == "object":
-                problem_type = "classification"
+        unique_ratio = y.nunique() / len(y)
+
+        if unique_ratio > 0.5:
+            problem_type = "regression"
         else:
-                problem_type = "regression"
-                
+            problem_type = "classification"
                 
         scaler = StandardScaler()
         X = scaler.fit_transform(X)
@@ -159,7 +171,7 @@ def scan_dataset():
 
 def main():
     
-    datasets = scan_dataset()[:5]  # Limit to first 5 datasets for testing
+    datasets = scan_dataset()  
     
     print("datasets found:", len(datasets))
     
@@ -184,5 +196,3 @@ def main():
 if __name__ == "__main__":
 
     main() 
-
-    
