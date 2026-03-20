@@ -15,7 +15,7 @@ def extract_meta_features(df):
 
     meta["num_rows"] = df.shape[0]
     meta["num_columns"] = df.shape[1]
-    meta["missing_ration"] = df.isnull().sum().sum()/(df.shape[0]*df.shape[1])
+    meta["missing_ratio"] = df.isnull().sum().sum()/(df.shape[0]*df.shape[1])
     
     numeric_df = df.select_dtypes(include=[np.number])
     

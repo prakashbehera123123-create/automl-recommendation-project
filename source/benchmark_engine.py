@@ -88,7 +88,7 @@ def process_dataset(dataset_path):
     
     
     try:
-
+        
         df = pd.read_csv(dataset_path)
         if df.shape[1] == 1:
             df = pd.read_csv(dataset_path, sep=';')
@@ -171,7 +171,7 @@ def scan_dataset():
 
 def main():
     
-    datasets = scan_dataset()  
+    datasets = scan_dataset()
     
     print("datasets found:", len(datasets))
     

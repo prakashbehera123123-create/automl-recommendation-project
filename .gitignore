@@ -15,3 +15,7 @@ datasets/raw_datasets/
 # OS files
 .DS_Store
 Thumbs.db
+.idea/
+venv/
+__pycache__/
+*.pyc
