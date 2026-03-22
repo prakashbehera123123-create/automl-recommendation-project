@@ -2,7 +2,7 @@
 import joblib
 import os
 import pandas as pd
-from similarity_engine import get_similar_datasets, similarity_recommendation
+from source.similarity_engine import get_similar_datasets, similarity_recommendation
 
 
 def load_artifact(path):

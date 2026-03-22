@@ -1,7 +1,7 @@
-import pandas as pd
-from sklearn.metrics.pairwise import cosine_similarity
-from collections import Counter
 import numpy as np
+import pandas as pd
+import faiss
+from collections import Counter
 
 
 def get_similar_datasets(new_meta_df, meta_df, top_k=3):
@@ -10,45 +10,50 @@ def get_similar_datasets(new_meta_df, meta_df, top_k=3):
     drop_cols = [col for col in ["dataset_name", "best_model"] if col in meta_df.columns]
     feature_df = meta_df.drop(columns=drop_cols)
 
-    #  Ensure same column order for similarity calculation
+    # Ensure same column order
     feature_df = feature_df[new_meta_df.columns]
 
-    # Safety check if columns match
-    if list(new_meta_df.columns) != list(feature_df.columns):
-        raise ValueError("Feature mismatch between new data and meta dataset")
+    # Convert to numpy float32
+    X = np.ascontiguousarray(feature_df.values.astype("float32"))
+    query = np.ascontiguousarray(new_meta_df.values.astype("float32"))
+    # Normalize for cosine similarity
+    faiss.normalize_L2(X)
+    faiss.normalize_L2(query)
 
-    # Compute similarity
-    similarities = cosine_similarity(new_meta_df, feature_df)[0]
+    # Build FAISS index (cosine via inner product)
+    index = faiss.IndexFlatIP(X.shape[1])
+    index.add(X)
 
-    # Get top K similar datasets
-    top_indices = similarities.argsort()[-top_k:][::-1]
+    # Search
+    similarity_scores, indices = index.search(query, top_k)
+
+    top_indices = indices[0]
+    scores = similarity_scores[0]
 
     similar_rows = meta_df.iloc[top_indices]
-    similarity_scores = similarities[top_indices]
 
-    return similar_rows, similarity_scores
+    return similar_rows, scores
 
 
-   # (Weighted Recommendation)
+# Weighted Recommendation (same as before)
 def similarity_recommendation(similar_rows, similarity_scores, meta_pred):
 
     algos = similar_rows["best_model"].values
 
-    # Weighted voting instead of simple count
     weighted_votes = {}
 
     for algo, score in zip(algos, similarity_scores):
-        weighted_votes[algo] = weighted_votes.get(algo, 0) + score
+        weighted_votes[algo] = weighted_votes.get(algo, 0) + float(score)
 
-    # Best algorithm based on weighted similarity
     sim_pred = max(weighted_votes, key=weighted_votes.get)
 
-    # Confidence (normalized)
-    sim_conf = np.mean(similarity_scores)
+    sim_conf = float(np.mean(similarity_scores))
 
     return {
         "similarity_prediction": sim_pred,
-        "similarity_confidence": float(round(sim_conf, 3)),
+        "similarity_confidence": round(sim_conf, 3),
         "meta_prediction": meta_pred,
-        "all_similarity_scores": dict(zip(algos, similarity_scores))
+        "all_similarity_scores": {
+            algo: float(score) for algo, score in zip(algos, similarity_scores)
+        }
     }
