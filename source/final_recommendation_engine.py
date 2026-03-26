@@ -2,6 +2,7 @@
 import joblib
 import os
 import pandas as pd
+import numpy as np
 from source.similarity_engine import get_similar_datasets, similarity_recommendation
 
 
@@ -33,10 +34,10 @@ def final_recommendation_engine(new_meta_df, meta_df):
     # 4. Meta-learning prediction
     # -------------------------------
     meta_probs = meta_model.predict_proba(new_meta_scaled)[0]
-    meta_classes = meta_model.classes_
+    
 
     # Top prediction
-    meta_pred = meta_classes[meta_probs.argmax()]
+    meta_pred = meta_model.predict(new_meta_scaled)[0]
     meta_conf = max(meta_probs)
 
     # -------------------------------
@@ -55,19 +56,32 @@ def final_recommendation_engine(new_meta_df, meta_df):
 
     # -------------------------------
     # 6. HYBRID DECISION (IMPORTANT)
+    # -------------------------------
+# 6. HYBRID DECISION (FIXED)
+# -------------------------------
     scores = {}
 
+    # Reduce similarity dominance
+    sim_conf = float(sim_conf) * 0.4  # max 40% weight to similarity
+
     # Meta contribution
-    scores[meta_pred] = 0.6 * float(meta_conf)
+    scores[meta_pred] = 0.7 * float(meta_conf)
 
     # Similarity contribution
-    scores[sim_pred] = scores.get(sim_pred, 0) + 0.4 * float(sim_conf)
+    scores[sim_pred] = scores.get(sim_pred, 0) + 0.4 * sim_conf
 
-    # Final decision
-    final_algo = max(scores, key=scores.get)
-    final_conf = scores[final_algo]
+    # Normalize
+    total_score = sum(scores.values())
+    scores = {k: v / total_score for k, v in scores.items()}
 
-    # -------------------------------
+    # Sort
+    sorted_models = sorted(scores.items(), key=lambda x: x[1], reverse=True)
+
+    final_algo = sorted_models[0][0]
+    final_conf = sorted_models[0][1]
+        # -------------------------------
+        
+    # top 3 for detailed output
     # 7. Output
     # -------------------------------
     return {
@@ -77,9 +91,7 @@ def final_recommendation_engine(new_meta_df, meta_df):
         "meta_confidence": round(float(meta_conf), 3),
         "similarity_prediction": sim_pred,
         "similarity_confidence": round(float(sim_conf), 3),
-        "details": {
-            k: float(v) for k, v in sim_result["all_similarity_scores"].items()
-        }
+        
     }
     
     
