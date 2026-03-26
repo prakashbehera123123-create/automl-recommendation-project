@@ -6,14 +6,13 @@ from fastapi import HTTPException
 
 app = FastAPI()
 
-
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
+    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
 
 ## input file → DataFrame function
 
